@@ -14,11 +14,8 @@ import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkPIDController;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
-import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.TrapezoidProfileSubsystem;
 import frc.robot.Constants;
 
@@ -83,7 +80,7 @@ public class Transmission extends TrapezoidProfileSubsystem {
     checkNeoError(m_motor.setPeriodicFramePeriod(CANSparkLowLevel.PeriodicFrame.kStatus2, 20),
         "Failed to set periodic status frame 2 rate");
 
-    // set turn moter to brake mode
+    // set turn motor to brake mode
     checkNeoError(m_motor.setIdleMode(CANSparkMax.IdleMode.kBrake), "Failed to set NEO idle mode");
     m_motor.setInverted(!MOTOR_INVERTED);
 
@@ -135,10 +132,28 @@ public class Transmission extends TrapezoidProfileSubsystem {
   public double getTransmisionGearRatio() {
 
     final double motorPose = m_motorEncoder.getPosition();
+   
+    Map.Entry<Double, Double> before = MotorPoseToCSVGearRatios.floorEntry(motorPose);
+    Map.Entry<Double, Double> after = MotorPoseToCSVGearRatios.ceilingEntry(motorPose);
+    if (before == null) {
+      if (after == null) {
+        return -1.0; // this should never happen b/c shooterSpeeds should have at least 1 element
+      }
+      
+      return after.getValue();
+    }
+    if (after == null) {
+      return before.getValue();
+    }
 
+    double denom = after.getKey() - before.getKey();
+    if (Math.abs(denom) < 0.1) {
+      // distance must have exactly matched a key
+      return before.getValue();
+    }
 
-
-    return 1;
+    double ratio = (motorPose - before.getKey()) / denom;
+    return MathUtil.interpolate(before.getValue(), after.getValue(), ratio);
   }
 
   @Override
@@ -147,7 +162,7 @@ public class Transmission extends TrapezoidProfileSubsystem {
   }
 
   @Override
-  protected void useState(State state) {
+  protected void useState(TrapezoidProfile.State setPoint) {
     // TODO Auto-generated method stub
     m_controller.setReference(setPoint.position, CANSparkMax.ControlType.kPosition);
   }

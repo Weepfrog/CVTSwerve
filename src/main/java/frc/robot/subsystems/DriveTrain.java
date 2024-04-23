@@ -145,22 +145,26 @@ public class DriveTrain extends SubsystemBase {
         m_swerveModules[0] = new SwerveModule("frontLeft",
                 new KrakenDriveController(Constants.FRONT_LEFT_MODULE_DRIVE_MOTOR),
                 new NeoSteerController(Constants.FRONT_LEFT_MODULE_STEER_MOTOR,
-                        Constants.FRONT_LEFT_MODULE_STEER_ENCODER, Constants.FRONT_LEFT_MODULE_STEER_OFFSET));
+                        Constants.FRONT_LEFT_MODULE_STEER_ENCODER, Constants.FRONT_LEFT_MODULE_STEER_OFFSET),
+                        new Transmission(0, 0));
 
         m_swerveModules[1] = new SwerveModule("frontRight",
                 new KrakenDriveController(Constants.FRONT_RIGHT_MODULE_DRIVE_MOTOR),
                 new NeoSteerController(Constants.FRONT_RIGHT_MODULE_STEER_MOTOR,
-                        Constants.FRONT_RIGHT_MODULE_STEER_ENCODER, Constants.FRONT_RIGHT_MODULE_STEER_OFFSET));
+                        Constants.FRONT_RIGHT_MODULE_STEER_ENCODER, Constants.FRONT_RIGHT_MODULE_STEER_OFFSET),
+                        new Transmission(0, 0));
 
         m_swerveModules[2] = new SwerveModule("backLeft",
                 new KrakenDriveController(Constants.BACK_LEFT_MODULE_DRIVE_MOTOR),
                 new NeoSteerController(Constants.BACK_LEFT_MODULE_STEER_MOTOR,
-                        Constants.BACK_LEFT_MODULE_STEER_ENCODER, Constants.BACK_LEFT_MODULE_STEER_OFFSET));
+                        Constants.BACK_LEFT_MODULE_STEER_ENCODER, Constants.BACK_LEFT_MODULE_STEER_OFFSET),
+                        new Transmission(0, 0));
 
         m_swerveModules[3] = new SwerveModule("backRight",
                 new KrakenDriveController(Constants.BACK_RIGHT_MODULE_DRIVE_MOTOR),
                 new NeoSteerController(Constants.BACK_RIGHT_MODULE_STEER_MOTOR,
-                        Constants.BACK_RIGHT_MODULE_STEER_ENCODER, Constants.BACK_RIGHT_MODULE_STEER_OFFSET));
+                        Constants.BACK_RIGHT_MODULE_STEER_ENCODER, Constants.BACK_RIGHT_MODULE_STEER_OFFSET),
+                        new Transmission(0, 0));
 
         // initialize the odometry class
         // needs to be done after the Modules are created and initialized
@@ -288,6 +292,15 @@ public class DriveTrain extends SubsystemBase {
         drive(chassisSpeeds);
     }
 
+    public double calculateMaxVelocity(){
+        double averageRatio = 0;
+        for (int i = 0; i < 4; i++){
+            averageRatio += m_swerveModules[i].getTransmisionGearRatio();
+        }
+        return averageRatio/4;
+  
+    }
+
     public void drive(ChassisSpeeds chassisSpeeds) {
         // // for debugging
         // SmartDashboard.putNumber("drivetrain/chassisX",
@@ -296,7 +309,7 @@ public class DriveTrain extends SubsystemBase {
         // chassisSpeeds.vyMetersPerSecond);
         // SmartDashboard.putNumber("drivetrain/chassisAngle",
         // Units.radiansToDegrees(chassisSpeeds.omegaRadiansPerSecond));
-
+        double calculatedMaxVelocity = 
         SwerveModuleState[] states = m_kinematics.toSwerveModuleStates(chassisSpeeds, ROTATION_CENTER_OFFSET);
         SwerveDriveKinematics.desaturateWheelSpeeds(states, MAX_VELOCITY_METERS_PER_SECOND);
         for (int i = 0; i < 4; i++) {
